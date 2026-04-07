@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Simulador de Inversión — PlazaBrokers</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #E8B931;
+  --gold-dim: #C9A227;
+  --gold-glow: rgba(232,185,49,0.12);
+  --gold-bright: #FFD54F;
+  --dark-0: #080808;
+  --dark-1: #0E0E0E;
+  --dark-2: #141414;
+  --dark-3: #1C1C1C;
+  --dark-4: #242424;
+  --border: rgba(255,255,255,0.06);
+  --border-active: rgba(232,185,49,0.3);
+  --text-primary: #F0EDE6;
+  --text-secondary: #9A968E;
+  --text-muted: #5E5B55;
+  --green: #34D399;
+  --green-dim: rgba(52,211,153,0.08);
+  --red: #F87171;
+  --red-dim: rgba(248,113,113,0.06);
+  --blue: #60A5FA;
+  --radius: 14px;
+  --transition: 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--dark-0);color:var(--text-primary);
+  font-family:'Outfit',sans-serif;font-weight:400;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;min-height:100vh;
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:10000;opacity:0.022;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── LAYOUT ── */
+.app{max-width:440px;margin:0 auto;padding:0 20px;position:relative}
+.app::before{
+  content:'';position:fixed;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);z-index:100;
+}
+
+/* ── HEADER ── */
+.header{padding:40px 0 32px;text-align:center}
+.logo{
+  font-weight:700;font-size:11px;letter-spacing:4px;
+  text-transform:uppercase;color:var(--gold);margin-bottom:28px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.logo::before,.logo::after{content:'';width:20px;height:1px;background:var(--gold-dim)}
+.header h1{
+  font-family:'Cormorant Garamond',serif;font-weight:700;
+  font-size:30px;line-height:1.15;letter-spacing:-0.5px;margin-bottom:12px;
+}
+.header h1 em{font-style:normal;color:var(--gold)}
+.header p{
+  font-size:14px;color:var(--text-secondary);line-height:1.65;
+  max-width:340px;margin:0 auto;font-weight:300;
+}
+
+/* ── PROGRESS ── */
+.progress-container{
+  padding:0 0 28px;position:sticky;top:0;z-index:50;
+  background:linear-gradient(180deg,var(--dark-0) 80%,transparent 100%);
+}
+.progress-bar{height:3px;background:var(--dark-4);border-radius:2px;overflow:hidden}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));
+  border-radius:2px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1);width:0%;
+}
+.progress-steps{
+  display:flex;justify-content:space-between;margin-top:8px;
+  font-size:10px;color:var(--text-muted);letter-spacing:1px;
+  text-transform:uppercase;font-weight:500;
+}
+.progress-steps span.active{color:var(--gold)}
+.progress-steps span.done{color:var(--text-secondary)}
+
+/* ── STEPS ── */
+.step{display:none;animation:stepIn 0.5s ease forwards}
+.step.active{display:block}
+@keyframes stepIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+.step-header{margin-bottom:24px}
+.step-number{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-dim);font-weight:600;margin-bottom:8px}
+.step-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;line-height:1.2}
+.step-subtitle{font-size:13px;color:var(--text-secondary);margin-top:6px;font-weight:300;line-height:1.5}
+
+/* ── FORM ELEMENTS ── */
+.field{margin-bottom:20px}
+.field-label{font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;display:block;letter-spacing:0.5px}
+.field-input{
+  width:100%;background:var(--dark-2);border:1px solid var(--border);
+  border-radius:10px;padding:14px 16px;font-family:'Outfit',sans-serif;
+  font-size:16px;font-weight:500;color:var(--text-primary);outline:none;
+  transition:border-color var(--transition),box-shadow var(--transition);
+  -webkit-appearance:none;
+}
+.field-input:focus{border-color:var(--border-active);box-shadow:0 0 0 3px var(--gold-glow)}
+.field-input::placeholder{color:var(--text-muted);font-weight:300}
+.field-hint{font-size:11px;color:var(--text-muted);margin-top:5px;font-weight:300}
+
+.amount-wrapper{position:relative}
+.amount-wrapper .prefix{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  font-size:14px;color:var(--text-muted);font-weight:500;pointer-events:none;
+}
+.amount-wrapper .field-input{padding-left:44px}
+
+/* Slider */
+.slider-field{margin-bottom:24px}
+.slider-value-display{
+  font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:700;
+  color:var(--gold);text-align:center;margin-bottom:14px;line-height:1;
+}
+.slider-value-display .unit{font-family:'Outfit',sans-serif;font-size:14px;color:var(--text-muted);font-weight:400;margin-left:4px}
+input[type="range"]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--dark-4);outline:none}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--gold);
+  cursor:pointer;box-shadow:0 0 0 4px var(--dark-0),0 0 20px var(--gold-glow);transition:box-shadow 0.2s;
+}
+input[type="range"]::-webkit-slider-thumb:active{box-shadow:0 0 0 4px var(--dark-0),0 0 30px rgba(232,185,49,0.35)}
+.slider-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:6px;font-weight:500}
+
+/* Select options */
+.select-group{display:flex;flex-direction:column;gap:8px}
+.select-option{
+  background:var(--dark-2);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;
+  transition:all var(--transition);-webkit-tap-highlight-color:transparent;
+}
+.select-option:hover{border-color:rgba(255,255,255,0.1)}
+.select-option.selected{border-color:var(--gold);background:linear-gradient(135deg,rgba(232,185,49,0.05) 0%,var(--dark-2) 100%)}
+.select-radio{
+  width:18px;height:18px;border-radius:50%;border:2px solid var(--text-muted);
+  flex-shrink:0;position:relative;transition:all var(--transition);
+}
+.select-option.selected .select-radio{border-color:var(--gold);background:var(--gold)}
+.select-option.selected .select-radio::after{
+  content:'';position:absolute;width:6px;height:6px;background:var(--dark-0);
+  border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);
+}
+.select-text{font-size:14px;font-weight:500}
+.select-text small{display:block;font-size:11px;color:var(--text-muted);font-weight:300;margin-top:2px}
+
+/* Toggle */
+.toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--dark-2);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;cursor:pointer;transition:border-color var(--transition);
+  margin-bottom:20px;-webkit-tap-highlight-color:transparent;
+}
+.toggle-row:hover{border-color:rgba(255,255,255,0.1)}
+.toggle-row.active-toggle{border-color:var(--border-active)}
+.toggle-label{font-size:13px;font-weight:500}
+.toggle-label small{display:block;font-size:11px;color:var(--text-muted);font-weight:300;margin-top:2px}
+.toggle-switch{
+  width:42px;height:22px;background:var(--dark-4);border-radius:11px;
+  position:relative;transition:background 0.3s;flex-shrink:0;margin-left:12px;
+}
+.toggle-switch.on{background:var(--gold)}
+.toggle-switch::after{
+  content:'';position:absolute;width:16px;height:16px;background:white;
+  border-radius:50%;top:3px;left:3px;transition:transform 0.3s;
+}
+.toggle-switch.on::after{transform:translateX(20px)}
+
+/* ── BUTTONS ── */
+.btn-row{display:flex;gap:10px;margin-top:28px;padding-bottom:40px}
+.btn{
+  flex:1;padding:15px 24px;border:none;border-radius:10px;
+  font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all var(--transition);-webkit-tap-highlight-color:transparent;
+}
+.btn-primary{background:var(--gold);color:var(--dark-0)}
+.btn-primary:hover{background:var(--gold-bright);transform:translateY(-1px);box-shadow:0 6px 24px rgba(232,185,49,0.25)}
+.btn-primary:disabled{opacity:0.3;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-secondary{background:var(--dark-3);color:var(--text-secondary);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--dark-4);color:var(--text-primary)}
+
+/* ── RESULTS ── */
+.result-section{display:none;animation:resultReveal 0.8s ease forwards}
+.result-section.active{display:block}
+@keyframes resultReveal{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+
+.verdict{
+  text-align:center;padding:36px 24px;border-radius:var(--radius);
+  margin-bottom:24px;position:relative;overflow:hidden;
+}
+.verdict-yes{background:linear-gradient(160deg,rgba(52,211,153,0.06) 0%,var(--dark-2) 60%);border:1px solid rgba(52,211,153,0.15)}
+.verdict-no{background:linear-gradient(160deg,rgba(248,113,113,0.05) 0%,var(--dark-2) 60%);border:1px solid rgba(248,113,113,0.1)}
+.verdict-badge{
+  display:inline-block;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  font-weight:700;padding:6px 14px;border-radius:20px;margin-bottom:16px;
+}
+.verdict-yes .verdict-badge{background:var(--green-dim);color:var(--green);border:1px solid rgba(52,211,153,0.2)}
+.verdict-no .verdict-badge{background:var(--red-dim);color:var(--red);border:1px solid rgba(248,113,113,0.15)}
+.verdict h2{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;margin-bottom:10px}
+.verdict-yes h2{color:var(--text-primary)}
+.verdict-no h2{color:var(--text-primary)}
+.verdict p{font-size:13px;color:var(--text-secondary);line-height:1.6;font-weight:300}
+
+/* Depto card */
+.depto-card{
+  background:var(--dark-2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;margin-bottom:16px;position:relative;overflow:hidden;
+}
+.depto-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+.depto-type-badge{
+  display:inline-block;background:var(--gold-glow);border:1px solid rgba(232,185,49,0.15);
+  color:var(--gold);font-size:11px;font-weight:600;padding:4px 12px;
+  border-radius:20px;letter-spacing:0.5px;margin-bottom:14px;
+}
+.depto-price{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;margin-bottom:4px}
+.depto-price-uf{font-size:13px;color:var(--text-muted);margin-bottom:18px;font-weight:300}
+.depto-detail{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.depto-detail:last-child{border-bottom:none}
+.depto-detail-label{font-size:12px;color:var(--text-secondary);font-weight:400}
+.depto-detail-value{font-size:13px;font-weight:600}
+.depto-detail-value.positive{color:var(--green)}
+.depto-detail-value.negative{color:var(--red)}
+
+/* Flow card */
+.flow-card{border-radius:var(--radius);padding:22px;margin-bottom:16px;text-align:center}
+.flow-positive{background:var(--green-dim);border:1px solid rgba(52,211,153,0.12)}
+.flow-negative{background:var(--red-dim);border:1px solid rgba(248,113,113,0.08)}
+.flow-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:600;margin-bottom:6px}
+.flow-positive .flow-label{color:var(--green)}
+.flow-negative .flow-label{color:var(--red)}
+.flow-amount{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:700}
+.flow-positive .flow-amount{color:var(--green)}
+.flow-negative .flow-amount{color:var(--red)}
+.flow-desc{font-size:12px;color:var(--text-secondary);margin-top:6px;font-weight:300;line-height:1.5}
+
+/* Patrimonio */
+.patrimonio-section{margin-top:28px;margin-bottom:24px}
+.patrimonio-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;margin-bottom:4px}
+.patrimonio-title em{font-style:normal;color:var(--gold)}
+.patrimonio-sub{font-size:13px;color:var(--text-secondary);font-weight:300;margin-bottom:16px;line-height:1.5}
+.income-source{
+  background:var(--dark-2);border:1px solid var(--border);border-radius:10px;
+  padding:16px 18px;margin-bottom:8px;display:flex;align-items:center;gap:14px;
+}
+.income-icon{
+  width:36px;height:36px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex-shrink:0;font-weight:700;
+  font-family:'Outfit',sans-serif;
+}
+.income-icon.plusv{background:rgba(96,165,250,0.08);color:var(--blue)}
+.income-icon.arriendo{background:rgba(52,211,153,0.08);color:var(--green)}
+.income-icon.amort{background:rgba(232,185,49,0.08);color:var(--gold)}
+.income-text{flex:1}
+.income-name{font-size:12px;color:var(--text-secondary);font-weight:400;margin-bottom:2px}
+.income-value{font-size:15px;font-weight:700}
+.income-value.blue{color:var(--blue)}
+.income-value.green{color:var(--green)}
+.income-value.gold{color:var(--gold)}
+
+.total-patrimonio{
+  background:linear-gradient(135deg,rgba(232,185,49,0.06) 0%,var(--dark-2) 100%);
+  border:1px solid rgba(232,185,49,0.15);border-radius:var(--radius);
+  padding:22px;text-align:center;margin-top:12px;margin-bottom:24px;
+}
+.total-patrimonio-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dim);font-weight:600;margin-bottom:6px}
+.total-patrimonio-amount{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:700;color:var(--gold)}
+.total-patrimonio-sub{font-size:12px;color:var(--text-muted);margin-top:4px;font-weight:300}
+
+/* No-qualify plan */
+.plan-card{
+  background:var(--dark-2);border:1px solid var(--border);
+  border-left:3px solid var(--gold);border-radius:0 var(--radius) var(--radius) 0;
+  padding:20px 20px 20px 22px;margin-bottom:10px;
+}
+.plan-card h4{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--gold)}
+.plan-card p{font-size:13px;color:var(--text-secondary);line-height:1.6;font-weight:300}
+.plan-card .tv{font-weight:700;color:var(--text-primary)}
+
+.plan-card-green{border-left-color:var(--green)}
+.plan-card-green h4{color:var(--green)}
+
+/* CTA */
+.cta-section{text-align:center;padding:32px 0 20px;border-top:1px solid var(--border)}
+.cta-section h3{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;margin-bottom:8px}
+.cta-section h3 em{font-style:normal;color:var(--gold)}
+.cta-section>p{font-size:13px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6;font-weight:300}
+.cta-btn{
+  display:inline-flex;align-items:center;gap:10px;padding:16px 32px;
+  border-radius:10px;text-decoration:none;font-family:'Outfit',sans-serif;
+  font-size:15px;font-weight:600;transition:all var(--transition);
+}
+.cta-whatsapp{background:#25D366;color:white}
+.cta-whatsapp:hover{background:#20BD5A;transform:translateY(-2px);box-shadow:0 8px 28px rgba(37,211,102,0.3)}
+.cta-instagram{background:linear-gradient(135deg,#E1306C 0%,#C13584 50%,#833AB4 100%);color:white}
+.cta-instagram:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(193,53,132,0.3)}
+.cta-msg{display:block;font-size:11px;color:var(--text-muted);margin-top:12px;font-weight:300}
+.author-tag{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;font-size:11px;color:var(--text-muted);font-weight:300}
+.author-tag strong{color:var(--text-secondary);font-weight:600}
+
+/* Disclaimer */
+.disclaimer{font-size:9px;color:var(--text-muted);text-align:center;padding:16px 20px 40px;line-height:1.6;opacity:0.6}
+
+/* Error */
+.field-error{font-size:11px;color:var(--red);margin-top:5px;display:none;font-weight:400}
+.field-error.visible{display:block;animation:shake 0.4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+/* Loading */
+.loading-overlay{display:none;position:fixed;inset:0;background:var(--dark-0);z-index:9999;justify-content:center;align-items:center;flex-direction:column;gap:20px}
+.loading-overlay.active{display:flex;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.spinner{width:36px;height:36px;border:2px solid var(--dark-4);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:var(--text-secondary);font-weight:300;text-align:center}
+.loading-sub{font-size:12px;color:var(--text-muted);margin-top:4px}
+
+/* Responsive */
+@media(max-width:380px){
+  .header h1{font-size:26px}
+  .slider-value-display{font-size:32px}
+  .depto-price{font-size:28px}
+  .flow-amount{font-size:28px}
+  .total-patrimonio-amount{font-size:34px}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Analizando tu perfil financiero</div>
+  <div class="loading-sub">Calculando opciones reales en Concepción...</div>
+</div>
+
+<div class="app">
+
+  <div class="header">
+    <div class="logo">PlazaBrokers</div>
+    <h1>Simula tu primer<br><em>depto de inversión</em></h1>
+    <p>Descubre en 2 minutos si puedes comprar un departamento que se pague solo en Concepción.</p>
+  </div>
+
+  <div class="progress-container">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-steps">
+      <span id="sl1" class="active">Ingresos</span>
+      <span id="sl2">Deudas</span>
+      <span id="sl3">Ahorro</span>
+      <span id="sl4">Datos</span>
+      <span id="sl5">Resultado</span>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 1 ═══ -->
+  <div class="step active" id="step1">
+    <div class="step-header">
+      <div class="step-number">Paso 01</div>
+      <div class="step-title">Tu situación laboral</div>
+      <div class="step-subtitle">Necesitamos tu ingreso y tipo de contrato para calcular cuánto te prestaría un banco.</div>
+    </div>
+    <div class="slider-field">
+      <div class="field-label">Renta líquida mensual</div>
+      <div class="slider-value-display">$<span id="rentaDisp">1.800.000</span></div>
+      <input type="range" id="rentaSlider" min="800000" max="5000000" step="50000" value="1800000">
+      <div class="slider-labels"><span>$800 mil</span><span>$5 millones</span></div>
+    </div>
+    <div class="field">
+      <div class="field-label">Tipo de contrato</div>
+      <div class="select-group" id="contractGroup">
+        <div class="select-option" data-value="indefinido" onclick="selContract(this)">
+          <div class="select-radio"></div>
+          <div class="select-text">Contrato indefinido<small>Mejor opción para créditos hipotecarios</small></div>
+        </div>
+        <div class="select-option" data-value="plazo" onclick="selContract(this)">
+          <div class="select-radio"></div>
+          <div class="select-text">Contrato a plazo fijo<small>Más difícil de aprobar, requiere antigüedad</small></div>
+        </div>
+        <div class="select-option" data-value="independiente" onclick="selContract(this)">
+          <div class="select-radio"></div>
+          <div class="select-text">Independiente / Honorarios<small>Posible pero con requisitos más altos de renta</small></div>
+        </div>
+      </div>
+      <div class="field-error" id="errContract">Selecciona tu tipo de contrato</div>
+    </div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="next(1)">Continuar</button></div>
+  </div>
+
+  <!-- ═══ STEP 2 ═══ -->
+  <div class="step" id="step2">
+    <div class="step-header">
+      <div class="step-number">Paso 02</div>
+      <div class="step-title">Tus deudas actuales</div>
+      <div class="step-subtitle">Cuánto pagas mensualmente en cuotas: créditos, auto, tarjetas, etc. Si no tienes, déjalo en $0.</div>
+    </div>
+    <div class="slider-field">
+      <div class="field-label">Total cuotas mensuales</div>
+      <div class="slider-value-display">$<span id="deudaDisp">0</span></div>
+      <input type="range" id="deudaSlider" min="0" max="800000" step="10000" value="0">
+      <div class="slider-labels"><span>$0</span><span>$800 mil</span></div>
+      <div class="field-hint">Suma todas tus cuotas: auto, casas comerciales, línea de crédito, etc.</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="prev(2)">Atrás</button>
+      <button class="btn btn-primary" onclick="next(2)">Continuar</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 3 ═══ -->
+  <div class="step" id="step3">
+    <div class="step-header">
+      <div class="step-number">Paso 03</div>
+      <div class="step-title">Ahorro y tipo de pie</div>
+      <div class="step-subtitle">¿Cómo quieres financiar la entrada del departamento?</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Modalidad de pie</div>
+      <div class="select-group">
+        <div class="select-option pie-option" data-value="cuotas" onclick="selPie(this)">
+          <div class="select-radio"></div>
+          <div class="select-text">Pie en cuotas (sin ahorro inicial)<small>El pie se suma al crédito hipotecario. Financiamiento 100%.</small></div>
+        </div>
+        <div class="select-option pie-option" data-value="cinco" onclick="selPie(this)">
+          <div class="select-radio"></div>
+          <div class="select-text">Pie 5%<small>Pagas solo el 5% al contado. Financiamiento 95%.</small></div>
+        </div>
+        <div class="select-option pie-option selected" data-value="diez" onclick="selPie(this)">
+          <div class="select-radio"></div>
+          <div class="select-text">Pie 10%<small>Opción estándar. Financiamiento 90%.</small></div>
+        </div>
+        <div class="select-option pie-option" data-value="veinte" onclick="selPie(this)">
+          <div class="select-radio"></div>
+          <div class="select-text">Pie 20%<small>Dividendo más bajo. Financiamiento 80%.</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ahorroSection">
+      <div class="slider-field">
+        <div class="field-label">Ahorro disponible para el pie</div>
+        <div class="slider-value-display">$<span id="ahorroDisp">8.000.000</span></div>
+        <input type="range" id="ahorroSlider" min="0" max="30000000" step="500000" value="8000000">
+        <div class="slider-labels"><span>$0</span><span>$30 millones</span></div>
+        <div class="field-hint">Incluye ahorros, inversiones líquidas o dinero que puedas destinar al pie.</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="prev(3)">Atrás</button>
+      <button class="btn btn-primary" onclick="next(3)">Continuar</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 4 ═══ -->
+  <div class="step" id="step4">
+    <div class="step-header">
+      <div class="step-number">Paso 04</div>
+      <div class="step-title">Último paso</div>
+      <div class="step-subtitle">Ingresa tus datos para ver tu resultado personalizado.</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Tu nombre</div>
+      <input type="text" class="field-input" id="leadName" placeholder="Ej: Matías Rodríguez" autocomplete="name">
+      <div class="field-error" id="errName">Ingresa tu nombre</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Tu número de WhatsApp</div>
+      <div class="amount-wrapper">
+        <span class="prefix">+56</span>
+        <input type="tel" class="field-input" id="leadPhone" placeholder="9 1234 5678" maxlength="11" autocomplete="tel">
+      </div>
+      <div class="field-error" id="errPhone">Ingresa un número válido</div>
+      <div class="field-hint">Para que Andrés pueda contactarte si calificas.</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="prev(4)">Atrás</button>
+      <button class="btn btn-primary" onclick="submit()">Ver mi resultado</button>
+    </div>
+  </div>
+
+  <!-- ═══ RESULTS ═══ -->
+  <div class="result-section" id="resultSection"></div>
+
+</div>
+
+<div class="disclaimer" id="disclaimer" style="display:none;">
+  *Simulación ilustrativa con supuestos: tasa 3.5%, financiamiento 90%, plusvalía ~9% anual, arriendos promedio Concepción 2026. No constituye asesoría financiera. Resultados reales pueden variar según proyecto y perfil.
+</div>
+
+<script>
+/* ═══ CONSTANTS ═══ */
+const UF = 39841.72;
+const TASA_ANUAL = 0.035;
+const PLAZO_ANIOS = 30;
+const MAX_CARGA = 0.30;
+const RENTA_MIN_INDEF = 1400000;
+const RENTA_MIN_OTRO = 2000000;
+const PLUSVALIA_ANUAL = 0.04;
+
+/* Pie options: cuotas=100% financiamiento, 5%, 10% */
+const PIE_OPTIONS = {
+  cuotas: { ratio: 0, financia: 1.00, label: 'Pie en cuotas (0% inicial)' },
+  cinco:  { ratio: 0.05, financia: 0.95, label: 'Pie 5%' },
+  diez:   { ratio: 0.10, financia: 0.90, label: 'Pie 10%' },
+  veinte: { ratio: 0.20, financia: 0.80, label: 'Pie 20%' }
+};
+
+/* Deptos calibrados con dividendos reales (base: 90% financiamiento)
+   Para otras opciones de pie, el dividendo se escala proporcionalmente */
+const DEPTOS = [
+  { tipo:'Studio',                uf:2500, arriendo:350000, divBase:325000 },
+  { tipo:'1 Dormitorio + 1 Baño', uf:2700, arriendo:400000, divBase:350000 },
+  { tipo:'2 Dormitorios + 1 Baño', uf:3200, arriendo:450000, divBase:415000 },
+  { tipo:'2 Dormitorios + 2 Baños', uf:3600, arriendo:550000, divBase:470000 },
+];
+
+/* ═══ STATE ═══ */
+let currentStep = 1;
+let contractType = null;
+let pieOption = 'diez'; // default: pie 10%
+
+/* ═══ FORMATTING ═══ */
+function fmt(n){ return Math.round(n).toLocaleString('es-CL') }
+function fmtS(n){ return (n>=0?'+':'-')+'$'+fmt(Math.abs(n)) }
+
+/* ═══ SLIDERS ═══ */
+const sRenta = document.getElementById('rentaSlider');
+const sDeuda = document.getElementById('deudaSlider');
+const sAhorro = document.getElementById('ahorroSlider');
+
+sRenta.addEventListener('input', ()=> document.getElementById('rentaDisp').textContent = fmt(+sRenta.value));
+sDeuda.addEventListener('input', ()=> document.getElementById('deudaDisp').textContent = fmt(+sDeuda.value));
+sAhorro.addEventListener('input', ()=> document.getElementById('ahorroDisp').textContent = fmt(+sAhorro.value));
+
+/* ═══ CONTRACT ═══ */
+function selContract(el){
+  document.querySelectorAll('.select-option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  contractType = el.dataset.value;
+  document.getElementById('errContract').classList.remove('visible');
+}
+
+/* ═══ PIE OPTION ═══ */
+function selPie(el){
+  document.querySelectorAll('.pie-option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  pieOption = el.dataset.value;
+  // Show/hide ahorro slider based on pie option
+  const ahorroSection = document.getElementById('ahorroSection');
+  if(pieOption === 'cuotas'){
+    ahorroSection.style.display = 'none';
+  } else {
+    ahorroSection.style.display = 'block';
+  }
+}
+
+/* ═══ NAVIGATION ═══ */
+function updateProgress(){
+  const pct = ((currentStep-1)/4)*100;
+  document.getElementById('progressFill').style.width = pct+'%';
+  for(let i=1;i<=5;i++){
+    const l = document.getElementById('sl'+i);
+    l.classList.remove('active','done');
+    if(i===currentStep) l.classList.add('active');
+    else if(i<currentStep) l.classList.add('done');
+  }
+}
+
+function showStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('step'+n);
+  if(el){ void el.offsetWidth; el.classList.add('active'); }
+  currentStep = n;
+  updateProgress();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function next(from){
+  if(from===1 && !contractType){ document.getElementById('errContract').classList.add('visible'); return; }
+  showStep(from+1);
+}
+function prev(from){ showStep(from-1); }
+
+/* ═══ SUBMIT ═══ */
+function submit(){
+  const name = document.getElementById('leadName').value.trim();
+  const phone = document.getElementById('leadPhone').value.trim();
+  let ok = true;
+  if(!name){ document.getElementById('errName').classList.add('visible'); ok=false; }
+  else document.getElementById('errName').classList.remove('visible');
+  if(!phone||phone.replace(/\s/g,'').length<8){ document.getElementById('errPhone').classList.add('visible'); ok=false; }
+  else document.getElementById('errPhone').classList.remove('visible');
+  if(!ok) return;
+
+  document.getElementById('loadingOverlay').classList.add('active');
+  setTimeout(()=>{
+    document.getElementById('loadingOverlay').classList.remove('active');
+    calculate(name, phone);
+  }, 2200);
+}
+
+function sendLead(name, phone, resultado){
+  const data = {
+    nombre:name, telefono:'+56 '+phone,
+    renta:+sRenta.value, deudas:+sDeuda.value, ahorro:+sAhorro.value,
+    contrato:contractType, pie:PIE_OPTIONS[pieOption].label,
+    fecha:new Date().toLocaleString('es-CL'),
+    resultado: resultado
+  };
+  const URL = 'https://script.google.com/macros/s/AKfycbyS19WjaaZRMcjAPrQTYaPa6WCgfVb9krEQd5f496GkHq7m3BA1J0UuJUinngaqUk0/exec';
+  fetch(URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).catch(()=>{});
+  console.log('Lead:', data);
+}
+
+/* ═══ CALCULATE ═══ */
+function calculate(nombre, phone){
+  const renta = +sRenta.value;
+  const deudas = +sDeuda.value;
+  const ahorro = pieOption === 'cuotas' ? 0 : +sAhorro.value;
+  const pie = PIE_OPTIONS[pieOption];
+  const pieRatio = pie.ratio;
+  const financiaRatio = pie.financia;
+  const firstName = nombre.split(' ')[0];
+
+  // Capacidad mensual para dividendo
+  const capMensual = renta * MAX_CARGA - deudas;
+
+  // Dividendo scale factor: base dividendos are for 90% financing
+  // Scale proportionally for other financing ratios
+  const divScale = financiaRatio / 0.90;
+
+  // Max depto por capacidad de pago
+  // Reference: studio 2500UF → divBase $325k at 90% → scaled dividendo
+  const refDivScaled = 325000 * divScale;
+  const divRatio = refDivScaled / (2500 * UF);
+  const maxDeptoPorCap = capMensual > 0 ? capMensual / divRatio : 0;
+
+  // Max depto por ahorro (skip if pie en cuotas)
+  const maxDeptoPorAhorro = pieRatio > 0 ? ahorro / pieRatio : Infinity;
+
+  // Effective max
+  const maxDeptoCLP = Math.min(maxDeptoPorCap, maxDeptoPorAhorro);
+  const maxDeptoUF = maxDeptoCLP / UF;
+
+  // Qualification checks
+  const rentaMin = contractType === 'indefinido' ? RENTA_MIN_INDEF : RENTA_MIN_OTRO;
+  const rentaBaja = renta < rentaMin;
+  const sinCapacidad = capMensual <= 0;
+  const noAlcanza = maxDeptoUF < 2200;
+  const califica = !rentaBaja && !sinCapacidad && !noAlcanza;
+
+  // Find best depto
+  let best = null;
+  for(let i=DEPTOS.length-1; i>=0; i--){
+    if(maxDeptoUF >= DEPTOS[i].uf){ best = DEPTOS[i]; break; }
+  }
+  if(!best && maxDeptoUF >= 2200) best = DEPTOS[0];
+
+  // Hide steps, show results
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('progressFill').style.width='100%';
+  for(let i=1;i<=5;i++){
+    const l=document.getElementById('sl'+i);
+    l.classList.remove('active','done');
+    if(i<5) l.classList.add('done'); else l.classList.add('active');
+  }
+
+  const rs = document.getElementById('resultSection');
+  document.getElementById('disclaimer').style.display = 'block';
+
+  if(califica && best){
+    const valorCLP = best.uf * UF;
+    const pieCLP = valorCLP * pieRatio;
+    const creditoCLP = valorCLP * financiaRatio;
+    const dividendo = Math.round(best.divBase * divScale);
+    const arriendo = best.arriendo;
+    const flujo = arriendo - dividendo;
+    const sePaga = flujo >= 0;
+
+    // Patrimonio 5 años
+    const plusv5 = valorCLP * (Math.pow(1+PLUSVALIA_ANUAL,5)-1);
+    const arriendoNeto5 = flujo > 0 ? flujo * 60 : 0;
+    const amort5 = creditoCLP * 0.085;
+    const totalPat = plusv5 + arriendoNeto5 + amort5;
+
+    sendLead(nombre, phone, 'Califica — ' + best.tipo + ' ' + fmt(best.uf) + ' UF');
+
+    rs.innerHTML = `
+      <div class="verdict verdict-yes">
+        <div class="verdict-badge">Resultado positivo</div>
+        <h2>Sí puedes invertir, ${firstName}</h2>
+        <p>Con tu perfil actual, calificas para comprar un departamento de inversión en Concepción. Esto es lo que los números dicen:</p>
+      </div>
+
+      <div class="depto-card">
+        <div class="depto-type-badge">${best.tipo}</div>
+        <div class="depto-price">$${fmt(valorCLP)}</div>
+        <div class="depto-price-uf">${fmt(best.uf)} UF · Concepción centro</div>
+        <div class="depto-detail">
+          <span class="depto-detail-label">${pieOption==='cuotas'?'Pie en cuotas (incluido en el crédito)':'Pie ('+Math.round(pieRatio*100)+'%)'}</span>
+          <span class="depto-detail-value">${pieOption==='cuotas'?'$0 inicial':'$'+fmt(pieCLP)}</span>
+        </div>
+        <div class="depto-detail">
+          <span class="depto-detail-label">Crédito hipotecario (${Math.round(financiaRatio*100)}%)</span>
+          <span class="depto-detail-value">$${fmt(creditoCLP)}</span>
+        </div>
+        <div class="depto-detail">
+          <span class="depto-detail-label">Dividendo mensual estimado</span>
+          <span class="depto-detail-value negative">-$${fmt(dividendo)}/mes</span>
+        </div>
+        <div class="depto-detail">
+          <span class="depto-detail-label">Arriendo mensual estimado</span>
+          <span class="depto-detail-value positive">+$${fmt(arriendo)}/mes</span>
+        </div>
+      </div>
+
+      <div class="flow-card ${sePaga?'flow-positive':'flow-negative'}">
+        <div class="flow-label">${sePaga?'Tu depto se paga solo':'Flujo mensual neto'}</div>
+        <div class="flow-amount">${fmtS(flujo)}/mes</div>
+        <div class="flow-desc">${sePaga
+          ?'El arriendo cubre el dividendo. No pones de tu bolsillo.'
+          :'Pondrías $'+fmt(Math.abs(flujo))+'/mes de tu bolsillo, pero generas patrimonio real cada mes.'
+        }</div>
+      </div>
+
+      <div class="patrimonio-section">
+        <div class="patrimonio-title">Patrimonio en <em>5 años</em></div>
+        <div class="patrimonio-sub">Tu depto genera ganancias por 3 vías al mismo tiempo:</div>
+
+        <div class="income-source">
+          <div class="income-icon plusv">P</div>
+          <div class="income-text">
+            <div class="income-name">Plusvalía — el depto sube de valor (~9% anual)</div>
+            <div class="income-value blue">+$${fmt(plusv5)}</div>
+          </div>
+        </div>
+        ${flujo>0?`
+        <div class="income-source">
+          <div class="income-icon arriendo">A</div>
+          <div class="income-text">
+            <div class="income-name">Arriendo neto acumulado en 5 años</div>
+            <div class="income-value green">+$${fmt(arriendoNeto5)}</div>
+          </div>
+        </div>`:''}
+        <div class="income-source">
+          <div class="income-icon amort">C</div>
+          <div class="income-text">
+            <div class="income-name">Amortización del crédito — otro paga tu deuda</div>
+            <div class="income-value gold">+$${fmt(amort5)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="total-patrimonio">
+        <div class="total-patrimonio-label">Patrimonio generado en 5 años</div>
+        <div class="total-patrimonio-amount">+$${fmt(totalPat)}</div>
+        <div class="total-patrimonio-sub">${pieOption==='cuotas'?'Sin necesidad de ahorro inicial — pie en cuotas':'Con una inversión de $'+fmt(pieCLP)+' como pie'}</div>
+      </div>
+
+      <div class="cta-section">
+        <h3>¿Quieres avanzar con <em>tu inversión</em>?</h3>
+        <p>Andrés te ayuda a encontrar el mejor proyecto para tu perfil. Sin compromiso.</p>
+        <a href="https://wa.me/message/6NJ24RTOWJJAB1" target="_blank" class="cta-btn cta-whatsapp">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Hablar con Andrés
+        </a>
+        <span class="cta-msg">Te responde personalmente por WhatsApp</span>
+        <div class="author-tag"><strong>Andrés Plaza</strong> · 7 departamentos en Concepción</div>
+      </div>
+    `;
+  } else {
+    /* ═══ NO CALIFICA ═══ */
+    let reasons = [];
+    let plans = [];
+
+    if(rentaBaja){
+      if(contractType==='indefinido'){
+        reasons.push('Tu renta actual está por debajo del mínimo que piden los bancos para un crédito hipotecario de inversión.');
+        plans.push({t:'Aumenta tu renta',p:`Necesitas llegar a al menos <span class="tv">$${fmt(RENTA_MIN_INDEF)}</span> líquidos mensuales. Te faltan <span class="tv">$${fmt(RENTA_MIN_INDEF-renta)}</span>.`});
+      } else {
+        reasons.push('Con contrato '+(contractType==='plazo'?'a plazo fijo':'independiente')+', los bancos exigen una renta más alta para aprobar.');
+        plans.push({t:'Busca estabilidad laboral',p:`Con tu tipo de contrato necesitas demostrar al menos <span class="tv">$${fmt(RENTA_MIN_OTRO)}</span> de renta líquida, o idealmente pasar a contrato indefinido.`});
+      }
+    }
+
+    if(sinCapacidad && !rentaBaja){
+      reasons.push('Tus deudas actuales consumen demasiado de tu capacidad de endeudamiento.');
+      const maxDeuda = renta*MAX_CARGA - 200000;
+      plans.push({t:'Reduce tus deudas',p:`Tu carga financiera mensual es <span class="tv">$${fmt(deudas)}</span>. Necesitas bajarla a menos de <span class="tv">$${fmt(Math.max(0,maxDeuda))}</span> para tener espacio para un dividendo.`});
+    }
+
+    if(noAlcanza && !rentaBaja && !sinCapacidad){
+      const pieMin = DEPTOS[0].uf * UF * pieRatio;
+      reasons.push('Tu ahorro no alcanza para cubrir el pie mínimo de un departamento de inversión.');
+      plans.push({t:'Junta tu pie',p:`El depto más accesible (Studio, ${fmt(DEPTOS[0].uf)} UF) necesita un pie de <span class="tv">$${fmt(pieMin)}</span>. Te faltan <span class="tv">$${fmt(Math.max(0,pieMin-ahorro))}</span>.`});
+    }
+
+    if(plans.length===0){
+      plans.push({t:'Prepara tu perfil',p:'Ordena tus finanzas, busca estabilidad laboral y ahorra para tu pie. La inversión premia a los que se preparan.'});
+    }
+
+    sendLead(nombre, phone, 'No califica — ' + (rentaBaja?'Renta baja':sinCapacidad?'Deudas altas':'Ahorro insuficiente'));
+
+    rs.innerHTML = `
+      <div class="verdict verdict-no">
+        <div class="verdict-badge">Todavía no</div>
+        <h2>Aún no calificas, ${firstName}</h2>
+        <p>${reasons[0]||'Tu perfil aún no califica, pero tiene solución.'}</p>
+      </div>
+
+      <div class="patrimonio-section">
+        <div class="patrimonio-title">Tu plan para <em>llegar a invertir</em></div>
+        ${plans.map(p=>`<div class="plan-card"><h4>${p.t}</h4><p>${p.p}</p></div>`).join('')}
+      </div>
+
+      <div class="plan-card plan-card-green">
+        <h4>Lo positivo</h4>
+        <p>Ya diste el primer paso: estás informándote. La mayoría de los inversionistas que acompaña Andrés empezaron exactamente donde estás hoy.</p>
+      </div>
+
+      <div class="cta-section">
+        <h3>Mientras tanto, <em>aprende a prepararte</em></h3>
+        <p>Andrés comparte contenido gratuito sobre inversión inmobiliaria y cómo construir tu perfil financiero.</p>
+        <a href="https://instagram.com/andresplaza.cl" target="_blank" class="cta-btn cta-instagram">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+          Seguir a @andresplaza.cl
+        </a>
+        <span class="cta-msg">Contenido gratuito de inversión inmobiliaria</span>
+        <div class="author-tag"><strong>Andrés Plaza</strong> · 7 departamentos en Concepción</div>
+      </div>
+    `;
+  }
+
+  rs.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
